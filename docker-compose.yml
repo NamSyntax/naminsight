@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  naminsight-core:
+    build: .
+    container_name: naminsight-core
+    ports:
+      - "8000:8000"
+    environment:
+      - QDRANT_URL=http://qdrant-server:6333
+      - DB_URI=postgresql://user:password@postgres-db:5432/naminsight
+      - DB_READONLY_URI=postgresql://naminsight_reader:reader_secure_pass@postgres-db:5432/naminsight
+      - USE_LOCAL_LLM=false
+      - HOST_PWD=${PWD}
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock # Expose Docker socket to enable Python Sandbox sidecar provisioning (DinD)
+    depends_on:
+      - qdrant-server
+      - postgres-db
+    restart: unless-stopped
+
+  qdrant-server:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-server
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: naminsight
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  naminsight-toolbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.sandbox
+    image: naminsight-toolbox
+    container_name: naminsight-toolbox-builder
+    command: "true"
+
+volumes:
+  qdrant_data:
+  postgres_data:

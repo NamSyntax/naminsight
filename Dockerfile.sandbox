@@ -1,0 +1,12 @@
+FROM python:3.12-slim
+
+# Libs for agents to process data.
+RUN pip install --no-cache-dir \
+    pandas==2.2.1 \
+    numpy==1.26.4 \
+    matplotlib==3.8.3 \
+    seaborn==0.13.2 \
+    scipy==1.12.0
+
+# isolated working directory.
+WORKDIR /scratch
